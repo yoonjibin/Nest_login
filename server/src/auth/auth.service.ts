@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Auth } from 'src/Entity/auth.entity';
 import { Repository } from 'typeorm';
@@ -31,24 +35,34 @@ export class AuthService {
 
     return User;
   }
+  async validateUser(id: string, pw: string): Promise<any> {
+    const user = await this.authRepository.findOne(id);
+    if (user && (await bcrypt.compare(user.pw === pw))) {
+      const { pw, ...result } = user;
+
+      return result;
+    }
+    return null;
+  }
   async login(data: any) {
     const result = this.authRepository.findOne({ id: data.id });
-    console.log(result);
     const payload = { id: data.id };
-    console.log(payload);
 
     if (!result && (await bcrypt.compare((await result).pw === data.pw))) {
       throw new BadRequestException();
     }
-    const jwt = this.jwtService.signAsync(payload);
+    const jwt = this.jwtService.sign(payload);
 
     return jwt;
   }
   async check(cookie: string) {
-    const { userdata } = this.jwtService.verify(cookie);
+    console.log(cookie);
+    const jwt = await this.jwtService.verifyAsync(cookie);
+    console.log(jwt);
 
-    if (userdata) {
+    if (jwt) {
       return true;
     }
+    throw new UnauthorizedException();
   }
 }

@@ -11,7 +11,6 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
-      transform: true,
     }),
   );
   console.log('listening on', port);
