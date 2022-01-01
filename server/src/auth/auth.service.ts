@@ -15,29 +15,34 @@ export class AuthService {
     @InjectRepository(Auth) private authRepository: Repository<Auth>,
     private readonly jwtService: JwtService,
   ) {}
-
   async register(data: any) {
-    const result = this.authRepository.findOne({ id: data.id });
+    console.log(data);
+    const user = await this.authRepository.findOne({ id: data.id });
+    console.log(user);
 
-    if (result) throw new BadRequestException();
-
+    if (user) {
+      throw new UnauthorizedException();
+    }
     const hash = await bcrypt.hash(data.pw, 10);
 
-    const UserData = await this.authRepository.create({
+    const Userdata = this.authRepository.create({
       id: data.id,
       pw: hash,
       name: data.name,
     });
+    console.log(Userdata);
 
-    const User = this.authRepository.save(UserData);
+    const User = this.authRepository.save(Userdata);
 
     delete (await User).pw;
+    console.log(User);
 
     return User;
   }
-  async validateUser(id: string, pw: string): Promise<any> {
-    const user = await this.authRepository.findOne(id);
-    if (user && (await bcrypt.compare(user.pw === pw))) {
+  async validateUser(data: any): Promise<any> {
+    const user = await this.authRepository.findOne(data.id);
+
+    if (user && (await user.pw) === data.pw) {
       const { pw, ...result } = user;
 
       return result;
@@ -45,24 +50,9 @@ export class AuthService {
     return null;
   }
   async login(data: any) {
-    const result = this.authRepository.findOne({ id: data.id });
     const payload = { id: data.id };
-
-    if (!result && (await bcrypt.compare((await result).pw === data.pw))) {
-      throw new BadRequestException();
-    }
-    const jwt = this.jwtService.sign(payload);
-
-    return jwt;
-  }
-  async check(cookie: string) {
-    console.log(cookie);
-    const jwt = await this.jwtService.verifyAsync(cookie);
-    console.log(jwt);
-
-    if (jwt) {
-      return true;
-    }
-    throw new UnauthorizedException();
+    return {
+      access_token: this.jwtService.sign(payload),
+    };
   }
 }
