@@ -39,17 +39,11 @@ export class AuthService {
 
     return User;
   }
-  async validateUser(data: any): Promise<any> {
-    const user = await this.authRepository.findOne(data.id);
-
-    if (user && (await user.pw) === data.pw) {
-      const { pw, ...result } = user;
-
-      return result;
-    }
-    return null;
-  }
   async login(data: any) {
+    const User = this.authRepository.findOne({ id: data.id });
+    if (User && (await User).id !== data.id) {
+      return '일치하지않는아이디';
+    }
     const payload = { id: data.id };
     return {
       access_token: this.jwtService.sign(payload),
