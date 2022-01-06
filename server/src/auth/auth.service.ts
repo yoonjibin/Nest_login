@@ -16,9 +16,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
   async register(data: any) {
-    console.log(data);
     const user = await this.authRepository.findOne({ id: data.id });
-    console.log(user);
 
     if (user) {
       throw new UnauthorizedException();
@@ -30,23 +28,21 @@ export class AuthService {
       pw: hash,
       name: data.name,
     });
-    console.log(Userdata);
 
     const User = this.authRepository.save(Userdata);
 
     delete (await User).pw;
-    console.log(User);
 
     return User;
   }
   async login(data: any) {
     const User = this.authRepository.findOne({ id: data.id });
     if (User && (await User).id !== data.id) {
-      return '일치하지않는아이디';
+      throw new UnauthorizedException();
     }
-    const payload = { id: data.id };
+    const payload = { id: data.id, name: (await User).name };
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: await this.jwtService.sign(payload),
     };
   }
 }
